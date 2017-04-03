@@ -16,25 +16,22 @@ class RetryError(Exception):
     pass
 
 
-def get_wrapped_fn(fn):
-    while hasattr(fn, '__wrapped__'):
-        fn = fn.__wrapped__
-
-    return fn
-
-
 def iscoroutinepartial(fn):
     # http://bugs.python.org/issue23519
 
-    while True:
-        parent = fn
+    parent = fn
 
-        fn = getattr(parent, 'func', None)
-
-        if fn is None:
-            break
+    while fn is not None:
+        parent, fn = fn, getattr(parent, 'func', None)
 
     return asyncio.iscoroutinefunction(parent)
+
+
+def unpartial(fn):
+    while hasattr(fn, 'func'):
+        fn = fn.func
+
+    return fn
 
 
 def isexception(obj):
@@ -76,15 +73,16 @@ def retry(
         @asyncio.coroutine
         def wrapped(*fn_args, **fn_kwargs):
             if isinstance(loop, str):
-                assert cls ^ kwargs
+                assert cls ^ kwargs, 'choose self.loop or kwargs["loop"]'
 
                 if cls:
-                    self = getattr(get_wrapped_fn(fn), '__self__', None)
-                    if self is None:
-                        assert fn_args
-                        self = fn_args[0]
+                    _self = getattr(unpartial(fn), '__self__', None)
 
-                    _loop = getattr(self, loop)
+                    if _self is None:
+                        assert fn_args, 'seems not unbound function'
+                        _self = fn_args[0]
+
+                    _loop = getattr(_self, loop)
                 elif kwargs:
                     _loop = fn_kwargs[loop]
             elif loop is None:
