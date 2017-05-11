@@ -138,11 +138,11 @@ def retry(
                 except _retry_exceptions as exc:
                     logger.debug(
                         'Tried attempt #{attempt} from total {attempts} for {fn}'.format(  # noqa
-                            fn=fn.__name__,
+                            fn=repr(fn),
                             attempt=attempt,
                             attempts='infinity' if attempts is forever else attempts,  # noqa
                         ),
-                        exc_info=True,
+                        exc_info=exc,
                     )
 
                     if (
