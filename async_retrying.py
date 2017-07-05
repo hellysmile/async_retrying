@@ -8,23 +8,14 @@ import async_timeout
 
 logger = logging.getLogger(__name__)
 
+__version__ = '0.0.1'
+
 
 retry = propagate = forever = ...
 
 
 class RetryError(Exception):
     pass
-
-
-def iscoroutinepartial(fn):
-    # http://bugs.python.org/issue23519
-
-    parent = fn
-
-    while fn is not None:
-        parent, fn = fn, getattr(parent, 'func', None)
-
-    return asyncio.iscoroutinefunction(parent)
 
 
 def unpartial(fn):
@@ -121,10 +112,10 @@ def retry(
                     ret = fn(*_fn_args, **_fn_kwargs)
 
                     if timeout is None:
-                        if iscoroutinepartial(fn):
+                        if asyncio.iscoroutinefunction(unpartial(fn)):
                             ret = yield from ret
                     else:
-                        if not iscoroutinepartial(fn):
+                        if not asyncio.iscoroutinefunction(unpartial(fn)):
                             raise TypeError(
                                 'Can\'t set timeout for non coroutinefunction',
                             )
@@ -158,7 +149,7 @@ def retry(
                         if callable(fallback):
                             ret = fallback(fn_args, fn_kwargs, loop=_loop)
 
-                            if iscoroutinepartial(fallback):
+                            if asyncio.iscoroutinefunction(unpartial(fallback)):  # noqa
                                 ret = yield from ret
                         else:
                             ret = fallback
@@ -171,7 +162,7 @@ def retry(
                         attempt, exc, fn_args, fn_kwargs, loop=_loop,
                     )
 
-                    if iscoroutinepartial(callback):
+                    if asyncio.iscoroutinefunction(unpartial(callback)):
                         ret = yield from ret
 
                     if ret is not retry:
