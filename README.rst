@@ -39,7 +39,7 @@ Usage
 
     @asyncio.coroutine
     def main():
-        return (yield from fn())
+        yield from fn()
 
     loop = asyncio.get_event_loop()
 
