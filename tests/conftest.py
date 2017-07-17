@@ -3,7 +3,7 @@ import asyncio
 import pytest
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def loop(request):
     with pytest.raises(RuntimeError):
         asyncio.get_event_loop()
