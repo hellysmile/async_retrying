@@ -17,6 +17,8 @@ propagate = forever = ...
 class RetryError(Exception):
     pass
 
+class ConditionError(Exception):
+    pass
 
 def unpartial(fn):
     while hasattr(fn, 'func'):
@@ -116,7 +118,7 @@ def retry(
                             ret = yield from ret
                     else:
                         if not asyncio.iscoroutinefunction(unpartial(fn)):
-                            raise TypeError(
+                            raise ConditionError(
                                 'Can\'t set timeout for non coroutinefunction',
                             )
 
@@ -124,6 +126,9 @@ def retry(
                             ret = yield from ret
 
                     return ret
+
+                except ConditionError:
+                    raise
                 except fatal_exceptions:
                     raise
                 except _retry_exceptions as exc:
