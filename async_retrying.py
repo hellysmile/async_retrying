@@ -105,7 +105,16 @@ def retry(
             while True:
                 if immutable:
                     _fn_args = copy.deepcopy(fn_args)
+
+                    kwargs_loop = isinstance(loop, str) and kwargs
+
+                    if kwargs_loop:
+                        obj = fn_kwargs.pop(loop)
+
                     _fn_kwargs = copy.deepcopy(fn_kwargs)
+
+                    if kwargs_loop:
+                        fn_kwargs[loop] = _fn_kwargs[loop] = obj
                 else:
                     _fn_args, _fn_kwargs = fn_args, fn_kwargs
 
