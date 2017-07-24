@@ -9,7 +9,7 @@ import asyncio
 def test_timeout_is_not_none_and_not_async(loop):
 
     @retry(timeout=0.5)
-    def coro():
+    def not_coro():
         pass
 
     with pytest.raises(ConditionError):

@@ -17,8 +17,10 @@ propagate = forever = ...
 class RetryError(Exception):
     pass
 
+
 class ConditionError(Exception):
     pass
+
 
 def unpartial(fn):
     while hasattr(fn, 'func'):
