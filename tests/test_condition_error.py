@@ -1,16 +1,17 @@
-from async_retrying import ConditionError, retry
+import asyncio
 
 import pytest
-import asyncio
+
+from async_retrying import ConditionError, retry
 
 
 @pytest.mark.run_loop
 @asyncio.coroutine
 def test_timeout_is_not_none_and_not_async(loop):
 
-    @retry(timeout=0.5)
+    @retry(timeout=0.5, loop=loop)
     def not_coro():
         pass
 
     with pytest.raises(ConditionError):
-        yield from coro()
+        yield from not_coro()
