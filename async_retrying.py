@@ -41,7 +41,7 @@ def callback(attempt, exc, args, kwargs, delay=None, *, loop):
     if delay is None:
         delay = callback.delay
 
-    yield from asyncio.sleep(attempt * callback.delay, loop=loop)
+    yield from asyncio.sleep(attempt * delay, loop=loop)
 
     return retry
 
@@ -172,11 +172,11 @@ def retry(
 
                         return ret
 
-                    attempt += 1
-
                     ret = callback(
                         attempt, exc, fn_args, fn_kwargs, loop=_loop,
                     )
+
+                    attempt += 1
 
                     if asyncio.iscoroutinefunction(unpartial(callback)):
                         ret = yield from ret
