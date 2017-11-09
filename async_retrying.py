@@ -49,7 +49,7 @@ def callback(attempt, exc, args, kwargs, delay=None, *, loop):
 callback.delay = 0.5
 
 
-def retry(
+def _retry(
     fn=None,
     *,
     attempts=3,
@@ -193,3 +193,26 @@ def retry(
         return wrapper(fn)
 
     raise NotImplementedError
+
+
+class retry(object):
+
+    def __init__(self, *args, **kwargs):
+        self._wrapper = _retry(*args, **kwargs)
+
+    def __enter__(self):
+        return self._wrapper
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    @asyncio.coroutine
+    def __aenter__(self):
+        return self._wrapper
+
+    @asyncio.coroutine
+    def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    def __call__(self, fn):
+        return self._wrapper(fn)
