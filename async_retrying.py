@@ -154,8 +154,9 @@ def retry(
                         _loop.get_debug() or
                         (attempts is not forever and attempt == attempts)
                     ):
+
                         logger.warning(
-                            'Attempts (%(attempt)d) are over for %(fn)r',
+                            exc.__class__.__name__ + ' -> Attempts (%(attempt)d) are over for %(fn)r',  # noqa
                             context,
                             exc_info=exc,
                         )
@@ -176,7 +177,7 @@ def retry(
                         return ret
 
                     logger.debug(
-                        'Tried attempt #%(attempt)d from total %(attempts)s for %(fn)r',  # noqa
+                        exc.__class__.__name__ + ' -> Tried attempt #%(attempt)d from total %(attempts)s for %(fn)r',  # noqa
                         context,
                         exc_info=exc,
                     )
