@@ -143,19 +143,22 @@ def retry(
                 except fatal_exceptions:
                     raise
                 except _retry_exceptions as exc:
-                    logger.debug(
-                        'Tried attempt #{attempt} from total {attempts} for {fn}'.format(  # noqa
-                            fn=repr(fn),
-                            attempt=attempt,
-                            attempts='infinity' if attempts is forever else attempts,  # noqa
-                        ),
-                        exc_info=exc,
-                    )
+                    _attempts = 'infinity' if attempts is forever else attempts
+                    context = {
+                        'fn': fn,
+                        'attempt': attempt,
+                        'attempts': _attempts,
+                    }
 
                     if (
                         _loop.get_debug() or
                         (attempts is not forever and attempt == attempts)
                     ):
+                        logger.warning(
+                            'Attempts (%(attempt)d) are over for %(fn)r',
+                            context,
+                            exc_info=exc,
+                        )
                         if fallback is propagate:
                             raise exc
 
@@ -171,6 +174,12 @@ def retry(
                             ret = fallback
 
                         return ret
+
+                    logger.debug(
+                        'Tried attempt #%(attempt)d from total %(attempts)s for %(fn)r',  # noqa
+                        context,
+                        exc_info=exc,
+                    )
 
                     ret = callback(
                         attempt, exc, fn_args, fn_kwargs, loop=_loop,
