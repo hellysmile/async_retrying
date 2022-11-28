@@ -1,43 +1,39 @@
 import asyncio
-
 from functools import partial
+from unittest.mock import call
 
 import pytest
 
 from async_retrying import callback, retry
 
 
-@pytest.mark.run_loop
-@asyncio.coroutine
-def test_smoke(loop):
+@pytest.mark.asyncio
+async def test_smoke(event_loop):
     counter = 0
 
-    @retry(loop=loop)
-    @asyncio.coroutine
-    def fn():
+    @retry(loop=event_loop)
+    async def fn():
         nonlocal counter
 
         counter += 1
 
         if counter == 1:
-            raise RuntimeError
+            raise
 
         return counter
 
-    ret = yield from partial(fn)()
+    ret = await partial(fn)()
 
     assert ret == counter
 
 
-@pytest.mark.run_loop
-@asyncio.coroutine
-def test_callback_delay(mocker, loop):
-    mocker.patch('asyncio.sleep')
+@pytest.mark.asyncio
+async def test_callback_delay(mocker, event_loop):
+    mocker.patch("asyncio.sleep")
     counter = 0
 
-    @retry(callback=partial(callback, delay=5), loop=loop)
-    @asyncio.coroutine
-    def fn():
+    @retry(callback=partial(callback, delay=5), loop=event_loop)
+    async def fn():
         nonlocal counter
 
         counter += 1
@@ -47,13 +43,10 @@ def test_callback_delay(mocker, loop):
 
         return counter
 
-    ret = yield from partial(fn)()
+    ret = await partial(fn)()
 
     assert ret == counter
 
-    expected = [
-        ((5,), {'loop': loop}),
-        ((10,), {'loop': loop}),
-    ]
+    expected = [call(5), call(10)]
 
     assert asyncio.sleep.call_args_list == expected
