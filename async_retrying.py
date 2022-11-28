@@ -8,7 +8,7 @@ import async_timeout
 
 logger = logging.getLogger(__name__)
 
-__version__ = '0.2.2'
+__version__ = "0.3.0"
 
 
 propagate = forever = ...
@@ -23,30 +23,25 @@ class ConditionError(Exception):
 
 
 def unpartial(fn):
-    while hasattr(fn, 'func'):
+    while hasattr(fn, "func"):
         fn = fn.func
 
     return fn
 
 
 def isexception(obj):
-    return (
-        isinstance(obj, Exception) or
-        (inspect.isclass(obj) and (issubclass(obj, Exception)))
+    return isinstance(obj, Exception) or (
+        inspect.isclass(obj) and (issubclass(obj, Exception))
     )
 
 
-@asyncio.coroutine
-def callback(attempt, exc, args, kwargs, delay=None, *, loop):
+async def callback(attempt, exc, args, kwargs, delay=None, *, loop):
     if delay is None:
-        delay = callback.delay
+        delay = getattr(callback, "delay", 0.5)
 
-    yield from asyncio.sleep(attempt * delay, loop=loop)
+    await asyncio.sleep(attempt * delay)
 
     return retry
-
-
-callback.delay = 0.5
 
 
 def retry(
@@ -65,30 +60,26 @@ def retry(
 ):
     def wrapper(fn):
         @wraps(fn)
-        @asyncio.coroutine
-        def wrapped(*fn_args, **fn_kwargs):
+        async def wrapped(*fn_args, **fn_kwargs):
             if isinstance(loop, str):
                 assert cls ^ kwargs, 'choose self.loop or kwargs["loop"]'
 
                 if cls:
-                    _self = getattr(unpartial(fn), '__self__', None)
+                    _self = getattr(unpartial(fn), "__self__", None)
 
                     if _self is None:
-                        assert fn_args, 'seems not unbound function'
+                        assert fn_args, "seems not unbound function"
                         _self = fn_args[0]
 
                     _loop = getattr(_self, loop)
                 elif kwargs:
                     _loop = fn_kwargs[loop]
             elif loop is None:
-                _loop = asyncio.get_event_loop()
+                _loop = asyncio.get_running_loop()
             else:
                 _loop = loop
 
-            if (
-                timeout is not None and
-                asyncio.TimeoutError not in retry_exceptions
-            ):
+            if timeout is not None and asyncio.TimeoutError not in retry_exceptions:
                 _retry_exceptions = (asyncio.TimeoutError,) + retry_exceptions
             else:
                 _retry_exceptions = retry_exceptions
@@ -126,15 +117,20 @@ def retry(
 
                     if timeout is None:
                         if asyncio.iscoroutinefunction(unpartial(fn)):
-                            ret = yield from ret
+                            ret = await ret
                     else:
                         if not asyncio.iscoroutinefunction(unpartial(fn)):
                             raise ConditionError(
-                                'Can\'t set timeout for non coroutinefunction',
+                                "Can't set timeout for non coroutinefunction",
                             )
 
-                        with async_timeout.timeout(timeout, loop=_loop):
-                            ret = yield from ret
+                        # Note no async_timeout shortcuts here
+                        # because we must keep a loop passed from the outside.
+                        async with async_timeout.Timeout(
+                            _loop.time() + timeout,
+                            loop=_loop,
+                        ):
+                            ret = await ret
 
                     return ret
 
@@ -143,20 +139,17 @@ def retry(
                 except fatal_exceptions:
                     raise
                 except _retry_exceptions as exc:
-                    _attempts = 'infinity' if attempts is forever else attempts
+                    _attempts = "infinity" if attempts is forever else attempts
                     context = {
-                        'fn': fn,
-                        'attempt': attempt,
-                        'attempts': _attempts,
+                        "fn": fn,
+                        "attempt": attempt,
+                        "attempts": _attempts,
                     }
 
-                    if (
-                        _loop.get_debug() or
-                        (attempts is not forever and attempt == attempts)
-                    ):
-
+                    if attempts is not forever and attempt == attempts:
                         logger.warning(
-                            exc.__class__.__name__ + ' -> Attempts (%(attempt)d) are over for %(fn)r',  # noqa
+                            exc.__class__.__name__
+                            + " -> Attempts (%(attempt)d) are over for %(fn)r",  # noqa
                             context,
                             exc_info=exc,
                         )
@@ -170,26 +163,31 @@ def retry(
                             ret = fallback(fn_args, fn_kwargs, loop=_loop)
 
                             if asyncio.iscoroutinefunction(unpartial(fallback)):  # noqa
-                                ret = yield from ret
+                                ret = await ret
                         else:
                             ret = fallback
 
                         return ret
 
                     logger.debug(
-                        exc.__class__.__name__ + ' -> Tried attempt #%(attempt)d from total %(attempts)s for %(fn)r',  # noqa
+                        exc.__class__.__name__
+                        + " -> Tried attempt #%(attempt)d from total %(attempts)s for %(fn)r",  # noqa
                         context,
                         exc_info=exc,
                     )
 
                     ret = callback(
-                        attempt, exc, fn_args, fn_kwargs, loop=_loop,
+                        attempt,
+                        exc,
+                        fn_args,
+                        fn_kwargs,
+                        loop=_loop,
                     )
 
                     attempt += 1
 
                     if asyncio.iscoroutinefunction(unpartial(callback)):
-                        ret = yield from ret
+                        ret = await ret
 
                     if ret is not retry:
                         return ret

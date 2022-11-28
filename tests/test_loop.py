@@ -1,18 +1,16 @@
-import pytest
 import asyncio
 
-from async_retrying import retry, RetryError
+import pytest
+
+from async_retrying import RetryError, retry
 
 
-@pytest.mark.run_loop
-@asyncio.coroutine
-def test_immutable_with_kwargs(loop):
-
-    @retry(loop='_loop', immutable=True, kwargs=True, fatal_exceptions=KeyError)
-    @asyncio.coroutine
-    def coro(a, *, _loop):
-        a.pop('a')
+@pytest.mark.asyncio
+async def test_immutable_with_kwargs(event_loop):
+    @retry(loop="_loop", immutable=True, kwargs=True, fatal_exceptions=KeyError)
+    async def coro(a, *, _loop):
+        a.pop("a")
         raise RuntimeError
 
     with pytest.raises(RetryError):
-        yield from coro(a={'a': 'a'}, _loop=loop)
+        await coro(a={"a": "a"}, _loop=event_loop)

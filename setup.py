@@ -1,52 +1,47 @@
-import io
-import os
 import re
+from pathlib import Path
 
 from setuptools import setup
 
+home = Path(__file__).parent
+readme = home / "README.rst"
+
 
 def get_version():
-    regex = r"__version__\s=\s\'(?P<version>[\d\.]+?)\'"
-
-    path = ('async_retrying.py',)
-
-    return re.search(regex, read(*path)).group('version')
-
-
-def read(*parts):
-    filename = os.path.join(os.path.abspath(os.path.dirname(__file__)), *parts)
-
-    with io.open(filename, encoding='utf-8', mode='rt') as fp:
-        return fp.read()
+    regex = re.compile(r'__version__ = "(?P<version>.+)"', re.M)
+    match = regex.search((home / "async_retrying.py").read_text())
+    return match.group("version")
 
 
 setup(
-    name='async_retrying',
+    name="async_retrying",
     version=get_version(),
-    author='OCEAN S.A.',
-    author_email='osf@ocean.io',
-    url='https://github.com/wikibusiness/async_retrying',
-    description='Simple retrying for asyncio',
-    long_description=read('README.rst'),
+    author="OCEAN S.A.",
+    author_email="osf@ocean.io",
+    url="https://github.com/wikibusiness/async_retrying",
+    description="Simple retrying for asyncio",
+    long_description=readme.read_text(),
     install_requires=[
-        'async_timeout',
+        "async_timeout",
     ],
     extras_require={
-        ':python_version=="3.3"': ['asyncio'],
+        ':python_version=="3.5"': ["asyncio"],
     },
-    py_modules=['async_retrying'],
+    py_modules=["async_retrying"],
     include_package_data=True,
     zip_safe=False,
     classifiers=[
-        'Development Status :: 4 - Beta',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
-    keywords=['asyncio', 'retrying'],
+    keywords=["asyncio", "retrying"],
 )

@@ -28,8 +28,7 @@ Usage
     counter = 0
 
     @retry
-    @asyncio.coroutine
-    def fn():
+    async def fn():
         global counter
 
         counter += 1
@@ -37,9 +36,8 @@ Usage
         if counter == 1:
             raise RuntimeError
 
-    @asyncio.coroutine
-    def main():
-        yield from fn()
+    async def main():
+        await fn()
 
     loop = asyncio.get_event_loop()
 
@@ -50,4 +48,4 @@ Usage
     loop.close()
 
 
-Python 3.3+ is required
+Python 3.5+ is required
